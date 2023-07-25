@@ -2,6 +2,7 @@ import { parse } from "node-html-parser";
 import axios from "axios";
 import fs from "fs";
 import shell from "shelljs";
+import { buildAxiosRequest } from "./endpoint.js";
 
 // Gathers needed git commands for bash to execute per provided contribution data.
 const getCommand = (contribution) => {
@@ -10,11 +11,11 @@ const getCommand = (contribution) => {
   );
 };
 
-export default async (input) => {
+export default async (answers) => {
+
   // Returns contribution graph html for a full selected year.
-  const res = await axios.get(
-    `https://github.com/users/${input.username}/contributions?tab=overview&from=${input.year}-12-01&to=${input.year}-12-31`
-  );
+  const req = buildAxiosRequest(answers)
+  const res = await axios.get(req.url, req.config);
 
   // Retrieves needed data from the html, loops over green squares with 1+ contributions,
   // and produces a multi-line string that can be run as a bash command.
@@ -34,7 +35,7 @@ export default async (input) => {
   fs.writeFile("script.sh", script, () => {
     console.log("\nFile was created successfully.");
 
-    if (input.execute) {
+    if (answers.execute) {
       console.log("This might take a moment!\n");
       shell.exec("sh ./script.sh");
     }

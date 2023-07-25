@@ -1,20 +1,48 @@
 import inquirer from "inquirer";
 import script from "./index.js";
 import axios from "axios";
+import { buildAxiosRequest } from "./endpoint.js";
 
 console.log("\nHello there!\n");
 
 const questions = [
   {
+    type: "list",
+    name: "gitHubType",
+    message: "What type of GitHub should we pull contributions from:",
+    choices: [{
+      name: "GitHub.com",
+      value: "gh",
+      checked: true
+    },{
+      name: "GitHub Enterprise",
+      value: "ghe"
+    }]
+  },
+  {
+    type: "input",
+    name: "gheServer",
+    message: "Please input the domain name of the GitHub Enterprise server (do not include 'https' or any slashes):",
+    when: (answers) => answers.gitHubType === "ghe"
+  },
+  {
+    type: "input",
+    name: "gheCookie",
+    message: "Please input an active session cookie from a browser that is logged in to the GitHub Enterprise server (session cookie is named 'user_session'):",
+    when: (answers) => answers.gitHubType === "ghe"
+  },
+  {
     type: "input",
     name: "username",
     message:
       "Please enter GitHub nickname with which you'd like to sync contributions:",
-    validate: (value) =>
-      axios
-        .get(`https://api.github.com/users/${value}`)
+    validate: (value, answers) => {
+      const req = buildAxiosRequest(answers, value)
+      return axios
+        .get(req.url, req.config)
         .then(() => true)
-        .catch(() => "Please enter an existing GitHub username."),
+        .catch(() => "There was an issue validating that user. Please enter an existing GitHub username.")
+      },
   },
   {
     type: "input",
